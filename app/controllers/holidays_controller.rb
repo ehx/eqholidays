@@ -3,8 +3,7 @@ class HolidaysController < ApplicationController
   helper :custom_fields
   include CustomFieldsHelper
   require 'date'
-  require 'pp'
-
+  
     def show
         #Trae todos los feriados cargados
         @holidays_free_days = Holidays_free_days.order('date_free_day ASC')

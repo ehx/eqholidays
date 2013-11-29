@@ -40,7 +40,6 @@
             <a class="icon icon-edit" href="/holidays/free/edit/<%= f.id %>"></a>
             <a id="dialog-confirm" class="icon icon-del" href="/holidays/free/delete/<%= f.id %>"></a>
             <%= f.date_free_day.strftime("%d/%m/%Y") %>
-            <% pp(f.enable) %>
             <% if f.enable == true then %>
                 <img alt="Toggle_check" src="/images/toggle_check.png">
             <% end %>
