@@ -1,0 +1,40 @@
+<% 
+if @mode == 'update' then 
+    @action = 'update_freeday' 
+else
+    @action = 'create_freeday'
+end
+%>
+    
+    <fieldset class="box tabular">
+      <legend>
+        Actualizacion de feriados
+      </legend>
+      <%= form_tag(:controller => 'holidays' ,:action => @action , :method => 'post') do %>
+        <p>
+            <%= label_tag(:dfree, 'Fecha feriado : ') %>
+            <%= text_field "holidays_free_days", "date_free_day" %>
+            <%= calendar_for('holidays_free_days_date_free_day') %>
+        </p>
+        <p>
+            <%= label_tag(:enable, "Habilitado : ") %>
+            <%= check_box_tag(:enable) %>
+        </p>
+        <%= hidden_field_tag(:id_freeday, @id_freeday) %>
+        <hr/>
+        <%= submit_tag "Guardar" %>
+      <% end %>
+    </fieldset>
+
+
+<% if @mode == 'update' then %>
+    <% if @holidays_freeday.enable == true then %>
+    <script>
+        $('#enable').attr('checked', true);;
+    </script>
+    <% end %>
+    
+    <script>
+        $('#holidays_free_days_date_free_day').val('<%= @holidays_freeday.date_free_day.to_s(:db) %>');
+    </script>
+<% end %>

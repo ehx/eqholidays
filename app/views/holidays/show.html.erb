@@ -1,0 +1,58 @@
+<div class="contextual">
+    <a href="/holidays/free/new" class="icon icon-add">Cargar feriado</a>
+</div>
+
+<h2>EqHolidays</h2>
+
+    <table class="list">
+        <thead>
+            <tr>
+            <th><%= translate 'holidays_username' %></th>
+            <th><%= translate 'holidays_user_date' %></th>
+            <th><%= translate 'holidays_days' %></th>
+            <th><%= translate 'holidays_days_consumed' %></th>
+            <th><%= translate 'holidays_free_days' %></th>
+            <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        
+        <% @users.each do |u| %>	   
+            <% if (u.firstname != "Redmine") then %>
+            <tr class="user active odd">
+                <td><a href="/users/<%= u.id %>/edit"><%= u.firstname %> <%= u.lastname %></a></td>
+                <td align="center" ><%= @date_by_user2[u.id].strftime("%d/%m/%Y") %></td>
+                <td align="center" ><%= pluralize(@vacations_days[u.id], 'día') %></td>
+                <td align="center" ><%= pluralize(@days_consumed[u.id], 'día') %></td>
+                <td align="center" ><strong><%= pluralize(@free_days[u.id], 'día') %></strong></td>
+                <td align="center" ><a href="/holidays/new/<%= u.id %>" class="icon icon-add"><%= translate 'holidays_add_vacations' %></a></td>
+            </tr>
+            <% end %>
+		<% end %>
+		
+		</tbody>
+    </table>
+
+<%  content_for :sidebar do %>
+    <h4>Feriados</h4>
+    <% @holidays_free_days.each do |f| %>
+        <p>
+            <a class="icon icon-edit" href="/holidays/free/edit/<%= f.id %>"></a>
+            <a id="dialog-confirm" class="icon icon-del" href="/holidays/free/delete/<%= f.id %>"></a>
+            <%= f.date_free_day.strftime("%d/%m/%Y") %>
+            <% pp(f.enable) %>
+            <% if f.enable == true then %>
+                <img alt="Toggle_check" src="/images/toggle_check.png">
+            <% end %>
+        </p>
+    <% end %>
+<%  end %>
+
+<script>
+    $('#dialog-confirm').click(function() {
+          return confirm('Se va a borrar el feriado, desea continuar ?');
+    });
+</script>
+
+
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />    

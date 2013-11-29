@@ -1,0 +1,26 @@
+<fieldset class="box tabular">
+  <legend>
+    Actualizacion de vacaciones para el usuario : <%= @user.firstname %> <%= @user.lastname %>
+  </legend>
+  <%= form_tag(:controller => 'holidays' ,:action => 'update' , :method => 'post') do %>
+    <p>
+        <%= label_tag(:fdesde, 'Fecha desde : ') %>
+        <%= text_field "holidays_users", "date_from" %>
+        <%= calendar_for('holidays_users_date_from') %>
+    </p>
+    <p>
+        <%= label_tag(:fhasta, 'Fecha hasta : ') %>  
+        <%= text_field "holidays_users", "date_to" %>
+        <%= calendar_for('holidays_users_date_to') %>
+    </p>
+    <%= hidden_field_tag(:id_user, @id_user) %>
+    <%= hidden_field_tag(:id_holidays, @id_holidays) %>
+    <hr/>
+    <%= submit_tag "Guardar" %>
+  <% end %>
+</fieldset>
+
+<script>
+    $('#holidays_users_date_from').val('<%= @holidays_user.date_from.to_s(:db) %>');
+    $('#holidays_users_date_to').val('<%= @holidays_user.date_to.to_s(:db)%>');
+</script>
