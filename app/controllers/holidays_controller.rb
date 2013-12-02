@@ -68,6 +68,18 @@ class HolidaysController < ApplicationController
                     @vacations_days[m.id] = parm.days_holidays
                 end
             end
+            
+            #Sql para recuperar el total de dias consumidos de vacaciones
+            sql_days = "SELECT IFNULL( sum( days ) , 0 )
+                        FROM holidays_users
+                        WHERE id_user = " + m.id.to_s() + "
+                        GROUP BY id_user " 
+                        
+            days_consumed = ActiveRecord::Base.connection.execute(sql_days)
+            
+            days_consumed.each do | days |
+                @days_consumed[m.id] = days[0]
+            end
     
             #Si tiene dias consumidos de vacaciones , se los descuenta de los dias disponibles                
             if @days_consumed[m.id] then
