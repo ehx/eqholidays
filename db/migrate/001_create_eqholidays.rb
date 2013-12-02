@@ -1,5 +1,5 @@
 class CreateEqholidays < ActiveRecord::Migration
-  def change
+def change
     create_table :holidays_parms do |t|
       t.integer :days_min
       t.integer :days_max
@@ -12,5 +12,10 @@ class CreateEqholidays < ActiveRecord::Migration
       t.date :date_to
       t.integer :days
     end
-  end
+
+    create_table :holidays_acum do |t|
+      t.integer :period
+      t.integer :id_user
+      t.integer :days
+    end
 end

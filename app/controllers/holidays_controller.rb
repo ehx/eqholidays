@@ -25,7 +25,6 @@ class HolidaysController < ApplicationController
         #Por cada uno de los usuarios activos
         @users.each do |m|
             
-            
             #Sql para recuperar las fechas de campo personalizado , fecha extendida
             sql = " SELECT MIN(value)
                     FROM custom_fields a
@@ -39,10 +38,10 @@ class HolidaysController < ApplicationController
             date_user.each do | date_u |
                 date_by_user = date_u[0]   
             end
-    
+        
             @date_by_user2[m.id] = DateTime.parse(date_by_user) 
             difference_days = (DateTime.now - @date_by_user2[m.id]).to_i
-            
+                
             #Sql para recuperar las fechas de campo personalizado , fecha de ingreso
             sql = " SELECT value
                     FROM custom_fields a
@@ -52,15 +51,13 @@ class HolidaysController < ApplicationController
                     
             #Obtengo la fecha del usuario        
             date_user_view = ActiveRecord::Base.connection.execute(sql)
-            
-            
+                
             date_user_view.each do | date_u |
                 date_by_user_view = date_u[0]   
             end
-            
+                
             @date_by_user_view[m.id] = DateTime.parse(date_by_user_view)
-            
-    
+                
             #Se fija en tabla de parametria cuanta cantidad de dias le pertenecen al usuario        
             holidays_parms.each do |parm|  
                 if  difference_days > parm.days_min and 
@@ -80,7 +77,7 @@ class HolidaysController < ApplicationController
             days_consumed.each do | days |
                 @days_consumed[m.id] = days[0]
             end
-    
+            
             #Si tiene dias consumidos de vacaciones , se los descuenta de los dias disponibles                
             if @days_consumed[m.id] then
                 if (@vacations_days[m.id] - @days_consumed[m.id]) > 0
@@ -92,6 +89,7 @@ class HolidaysController < ApplicationController
                 @free_days[m.id] = @vacations_days[m.id]
             end
         end
+        
         render :template => "holidays/show", :formats => [:html]
     end
     
