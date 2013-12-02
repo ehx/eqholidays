@@ -3,18 +3,10 @@ class HolidaysController < ApplicationController
   helper :custom_fields
   include CustomFieldsHelper
   require 'date'
-  require 'pp'
 
     def show
-        #Trae todos los feriados cargados
-        @holidays_free_days = Holidays_free_days.order('date_free_day ASC')
-        
-        #Trae todos los usuarios activos
-        @users = User.logged.status(User::STATUS_ACTIVE).order('firstname ASC')
-        
         #Calcula dias por usuario
         self.days_users('')
-        
         render :template => "holidays/show", :formats => [:html]
     end
     
@@ -204,6 +196,13 @@ class HolidaysController < ApplicationController
     end
     
     def days_users(mode)
+        
+        #Trae todos los feriados cargados
+        @holidays_free_days = Holidays_free_days.order('date_free_day ASC')
+        
+        #Trae todos los usuarios activos
+        @users = User.logged.status(User::STATUS_ACTIVE).order('firstname ASC')
+        
         #Trae la parametria de vacaciones
         holidays_parms = Holidays_parms.find(:all)
         
@@ -285,8 +284,9 @@ class HolidaysController < ApplicationController
             
             #Si el modo es cerrar el periodo , creo
             if mode == 'close' then
-                @holidays_acum.period = DateTime.new.year
-                @holidays_acum.user_id = m.id
+                @holidays_acum = Holidays_acum.new
+                @holidays_acum.period = DateTime.now.year
+                @holidays_acum.id_user = m.id
                 @holidays_acum.days = @free_days[m.id]
                 @holidays_acum.save
             end
@@ -294,7 +294,8 @@ class HolidaysController < ApplicationController
     end
 
     def close_period
-        @holidays_acum = Holidays_acum.new()
         self.days_users('close')
+        flash[:notice] = translate 'holidays_close_ok' 
+        redirect_to :controller=>'holidays', :action => 'show'
     end
 end

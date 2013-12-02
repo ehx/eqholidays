@@ -19,7 +19,7 @@ class CreateEqholidays < ActiveRecord::Migration
           t.boolean :enable
         end
     
-        create_table :holidays_acum , :force => true do |t|
+        create_table :holidays_acums , :force => true do |t|
           t.integer :period
           t.integer :id_user
           t.integer :days
