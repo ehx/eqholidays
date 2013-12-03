@@ -197,6 +197,8 @@ class HolidaysController < ApplicationController
     
     def days_users(mode)
         
+        @flagerror = 0
+        
         #Trae todos los feriados cargados
         @holidays_free_days = Holidays_free_days.order('date_free_day ASC')
         
@@ -214,6 +216,11 @@ class HolidaysController < ApplicationController
         @date_by_user_view = Hash.new
         @days_consumed = Hash.new
         @free_days = Hash.new
+        @holidays_acum = Hash.new
+        today_year = 0
+        
+        #año actual
+        today_year = DateTime.now.year
         
         #Por cada uno de los usuarios activos
         @users.each do |m|
@@ -259,11 +266,13 @@ class HolidaysController < ApplicationController
                 end
             end
             
-            #Sql para recuperar el total de dias consumidos de vacaciones
+            #Sql para recuperar el total de dias consumidos de vacaciones en este periodo
             sql_days = "SELECT IFNULL( sum( days ) , 0 )
                         FROM holidays_users
-                        WHERE id_user = " + m.id.to_s() + "
-                        GROUP BY id_user " 
+                        WHERE id_user = " + m.id.to_s() + " AND 
+                        YEAR(date_from) = " + today_year.to_s + " AND 
+                        YEAR(date_to) = " + today_year.to_s + "
+                        GROUP BY id_user" 
                         
             days_consumed = ActiveRecord::Base.connection.execute(sql_days)
             
@@ -271,31 +280,61 @@ class HolidaysController < ApplicationController
                 @days_consumed[m.id] = days[0]
             end
             
-            #Si tiene dias consumidos de vacaciones , se los descuenta de los dias disponibles                
+            #Sql para recuperar vacaciones antiguas
+            sql_acum =" SELECT sum(days)
+                        FROM `holidays_acums`
+                        WHERE id_user = " + m.id.to_s() + "
+                        AND period >= " + (today_year-2).to_s + "
+                        GROUP BY `id_user`"
+                    
+            #Obtengo dias acumulados de los usuarios (2 periodos anteriores)
+            days_acum = ActiveRecord::Base.connection.execute(sql_acum)
+            
+            days_acum.each do | day_a |
+                @holidays_acum[m.id] = day_a[0]   
+            end
+
+            #Si tiene dias consumidos de vacaciones , se los descuenta de los dias disponibles  
+            #Si tiene dias acumulados , se le suma a los disponibles
             if @days_consumed[m.id] then
                 if (@vacations_days[m.id] - @days_consumed[m.id]) > 0
-                    @free_days[m.id] = @vacations_days[m.id] - @days_consumed[m.id]
+                    @free_days[m.id] = @vacations_days[m.id] - @days_consumed[m.id] + @holidays_acum[m.id]
                 else
                     @free_days[m.id] = 0
                 end
             else
-                @free_days[m.id] = @vacations_days[m.id]
+                @free_days[m.id] = @vacations_days[m.id] + @holidays_acum[m.id]
             end
-            
+
             #Si el modo es cerrar el periodo , creo
             if mode == 'close' then
-                @holidays_acum = Holidays_acum.new
-                @holidays_acum.period = DateTime.now.year
-                @holidays_acum.id_user = m.id
-                @holidays_acum.days = @free_days[m.id]
-                @holidays_acum.save
+                @holidays_acum = Holidays_acum.where("period = ? AND id_user = ?", today_year , m.id)
+                
+                #Compruebo que para el periodo a cerrar , no exista previamente un periodo cerrado igual
+                if @holidays_acum.empty? then
+                    @holidays_acum = Holidays_acum.new
+                    @holidays_acum.period = today_year
+                    @holidays_acum.id_user = m.id
+                    @holidays_acum.days = @free_days[m.id]
+                    @holidays_acum.save
+                else
+                    @flagerror = 1
+                    @holidays_acum.each do | ha |
+                        @period = ha.period
+                    end
+                end
             end
         end
     end
 
     def close_period
         self.days_users('close')
-        flash[:notice] = translate 'holidays_close_ok' 
-        redirect_to :controller=>'holidays', :action => 'show'
+        if @flagerror == 0 then
+            flash[:notice] = translate 'holidays_close_ok'
+            redirect_to :controller=>'holidays', :action => 'show'
+        else    
+            flash[:error] = translate 'holidays_close_error'
+            redirect_to :controller=>'holidays', :action => 'show'
+    end
     end
 end

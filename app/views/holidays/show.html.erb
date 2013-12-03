@@ -8,11 +8,12 @@
     <table class="list">
         <thead>
             <tr>
-            <th><%= translate 'holidays_username' %></th>
-            <th><%= translate 'holidays_user_date' %></th>
-            <th><%= translate 'holidays_days' %></th>
-            <th><%= translate 'holidays_days_consumed' %></th>
-            <th><%= translate 'holidays_free_days' %></th>
+            <th><%= t 'holidays_username' %></th>
+            <th><%= t 'holidays_user_date' %></th>
+            <th><%= t 'holidays_days' %></th>
+            <th><%= t 'holidays_days_consumed' %></th>
+            <th><%= t 'holidays_acum' %></th>
+            <th><%= t 'holidays_free_days' %></th>
             <th></th>
             </tr>
         </thead>
@@ -25,6 +26,7 @@
                 <td align="center" ><%= @date_by_user_view[u.id].strftime("%d/%m/%Y") %></td>
                 <td align="center" ><%= pluralize(@vacations_days[u.id], 'día') %></td>
                 <td align="center" ><%= pluralize(@days_consumed[u.id], 'día') %></td>
+                <td align="center" ><%= pluralize(@holidays_acum[u.id], 'día') %></td>
                 <td align="center" ><strong><%= pluralize(@free_days[u.id], 'día') %></strong></td>
                 <td align="center" ><a href="/holidays/new/<%= u.id %>" class="icon icon-add"><%= translate 'holidays_add_vacations' %></a></td>
             </tr>

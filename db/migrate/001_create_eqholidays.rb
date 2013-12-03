@@ -24,6 +24,9 @@ class CreateEqholidays < ActiveRecord::Migration
           t.integer :id_user
           t.integer :days
         end
+        
+        execute "ALTER TABLE `holidays_acums` ADD UNIQUE (`period` ,`id_user`);"
+        execute "INSERT INTO `holidays_parms` (`id`, `days_min`, `days_max`, `days_holidays`) VALUES (1, 0, 183, 5), (2, 183, 730, 10), (3, 730, 1460, 15), (4, 1460, 3650, 20),(5, 3650, 99999, 25);"
     end
     
 end
