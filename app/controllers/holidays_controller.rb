@@ -239,16 +239,6 @@ class HolidaysController < ApplicationController
                 date_by_user = date_u[0]   
             end
         
-            @date_by_user2[m.id] = DateTime.parse(date_by_user) 
-            difference_days = (DateTime.now - @date_by_user2[m.id]).to_i
-                
-            #Sql para recuperar las fechas de campo personalizado , fecha de ingreso
-            sql = " SELECT value
-                    FROM custom_fields a
-                    INNER JOIN custom_values b ON a.id = b.custom_field_id
-                    INNER JOIN users ON b.customized_id = users.id
-                    WHERE a.id = 10 AND users.id = " + m.id.to_s()
-                    
             #Obtengo la fecha del usuario        
             date_user_view = ActiveRecord::Base.connection.execute(sql)
                 
@@ -257,6 +247,10 @@ class HolidaysController < ApplicationController
             end
                 
             @date_by_user_view[m.id] = DateTime.parse(date_by_user_view)
+            
+            @date_by_user2[m.id] = DateTime.parse(date_by_user_view)
+            
+            difference_days = (DateTime.now - @date_by_user2[m.id]).to_i
                 
             #Se fija en tabla de parametria cuanta cantidad de dias le pertenecen al usuario        
             holidays_parms.each do |parm|  
@@ -297,16 +291,14 @@ class HolidaysController < ApplicationController
             #Si tiene dias consumidos de vacaciones , se los descuenta de los dias disponibles  
             #Si tiene dias acumulados , se le suma a los disponibles
             if @days_consumed[m.id] then
-                if (@vacations_days[m.id] - @days_consumed[m.id]) > 0
-                    @free_days[m.id] = @vacations_days[m.id] - @days_consumed[m.id] + @holidays_acum[m.id]
-                else
-                    @free_days[m.id] = 0
-                end
-            else
                 if @holidays_acum[m.id] then
-                    @free_days[m.id] = @vacations_days[m.id] + @holidays_acum[m.id]
+                    if (@vacations_days[m.id] - @days_consumed[m.id]) > 0
+                        @free_days[m.id] = @vacations_days[m.id] - @days_consumed[m.id] + @holidays_acum[m.id]
+                    else
+                        @free_days[m.id] = 0
+                    end
                 else
-                    @free_days[m.id] = @vacations_days[m.id]
+                    @free_days[m.id] = @vacations_days[m.id] - @days_consumed[m.id]
                 end
             end
 
