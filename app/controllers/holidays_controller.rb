@@ -303,7 +303,11 @@ class HolidaysController < ApplicationController
                     @free_days[m.id] = 0
                 end
             else
-                @free_days[m.id] = @vacations_days[m.id] + @holidays_acum[m.id]
+                if @holidays_acum[m.id] then
+                    @free_days[m.id] = @vacations_days[m.id] + @holidays_acum[m.id]
+                else
+                    @free_days[m.id] = @vacations_days[m.id]
+                end
             end
 
             #Si el modo es cerrar el periodo , creo
