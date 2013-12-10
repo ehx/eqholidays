@@ -16,3 +16,4 @@ en:
     holidays_free_day_error : "Free day error."
     holidays_close_ok       : "The holiday period is closed."
     holidays_close_error    : "An error occurred when closing the current period."
+    holidays_cons           : "Days granted"

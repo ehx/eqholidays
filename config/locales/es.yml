@@ -17,3 +17,4 @@ es:
     holidays_free_day_error : "Ocurrio un error al guardar el feriado."
     holidays_close_ok       : "Se cerro el periodo de vacaciones correctamente."
     holidays_close_error    : "El periodo actual ya cerro anteriormente."
+    holidays_cons           : "Dias concedidos"

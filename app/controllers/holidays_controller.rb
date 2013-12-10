@@ -218,6 +218,7 @@ class HolidaysController < ApplicationController
         @days_consumed = Hash.new
         @free_days = Hash.new
         @holidays_acum = Hash.new
+        @days_cons = Hash.new
         today_year = 0
         
         #año actual
@@ -225,6 +226,17 @@ class HolidaysController < ApplicationController
         
         #Por cada uno de los usuarios activos
         @users.each do |m|
+
+            sql = " SELECT IFNULL( SUM( `days` ) , 0 )
+                    FROM `holidays_adds`
+                    WHERE YEAR( `date` ) = 2013 AND `user_id` = " + m.id.to_s()
+                    
+            #Obtengo dias consolidados
+            days_cons = ActiveRecord::Base.connection.execute(sql)
+            
+            days_cons.each do | days_c |
+                @days_cons[m.id] = days_c[0]   
+            end
             
             #Sql para recuperar las fechas de campo personalizado , fecha extendida
             sql = " SELECT MIN(value)
@@ -301,12 +313,12 @@ class HolidaysController < ApplicationController
             if @days_consumed[m.id] then
                 if @holidays_acum[m.id] then
                     if (@vacations_days[m.id] - @days_consumed[m.id]) > 0
-                        @free_days[m.id] = @vacations_days[m.id] - @days_consumed[m.id] + @holidays_acum[m.id]
+                        @free_days[m.id] = @vacations_days[m.id] - @days_consumed[m.id] + @holidays_acum[m.id] + @days_cons[m.id]
                     else
                         @free_days[m.id] = 0
                     end
                 else
-                    @free_days[m.id] = @vacations_days[m.id] - @days_consumed[m.id]
+                    @free_days[m.id] = @vacations_days[m.id] - @days_consumed[m.id] + @days_cons[m.id]
                 end
             end
 
