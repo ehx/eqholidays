@@ -3,7 +3,6 @@ class HolidaysController < ApplicationController
   helper :custom_fields
   include CustomFieldsHelper
   require 'date'
-  require 'pp'
 
     def show
         #Calcula dias por usuario
@@ -200,8 +199,11 @@ class HolidaysController < ApplicationController
         
         @flagerror = 0
         
+        #año actual
+        today_year = DateTime.now.year
+        
         #Trae todos los feriados cargados
-        @holidays_free_days = Holidays_free_days.order('date_free_day ASC')
+        @holidays_free_days = Holidays_free_days.order('date_free_day ASC').where('YEAR(date_free_day) = ?', today_year.to_s)
         
         #Trae todos los usuarios activos
         @users = User.logged.status(User::STATUS_ACTIVE).order('firstname ASC')
@@ -220,9 +222,6 @@ class HolidaysController < ApplicationController
         @holidays_acum = Hash.new
         @days_cons = Hash.new
         today_year = 0
-        
-        #año actual
-        today_year = DateTime.now.year
         
         #Por cada uno de los usuarios activos
         @users.each do |m|
@@ -254,7 +253,6 @@ class HolidaysController < ApplicationController
         
             @date_by_user2[m.id] = DateTime.parse(date_by_user) 
             difference_days = (DateTime.now - @date_by_user2[m.id]).to_i
-
 
             #Sql para recuperar las fechas de campo personalizado , fecha de ingreso
             sql = " SELECT value
