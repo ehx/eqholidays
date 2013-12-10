@@ -1,5 +1,6 @@
 <div class="contextual">
     <a href="/holidays/free/new" class="icon icon-add">Cargar feriado</a> |
+    <a href="/holidays_add/index" class="icon icon-add">Agregar vacaciones</a> |
     <a href="/holidays/close" class="icon icon-lock">Cerrar periodo</a> 
 </div>
 
@@ -18,7 +19,7 @@
             </tr>
         </thead>
         <tbody>
-        dsadsadsadasdsadsaadads
+
         <% @users.each do |u| %>	   
             <% if (u.firstname != "Redmine") then %>
             <tr class="user active odd">
@@ -37,7 +38,7 @@
     </table>
 
 <%  content_for :sidebar do %>
-    <h4>Feriados</h4>
+    <h4>Feriados <%= DateTime.now.year %></h4>
     <% @holidays_free_days.each do |f| %>
         <p>
             <a class="icon icon-edit" href="/holidays/free/edit/<%= f.id %>"></a>

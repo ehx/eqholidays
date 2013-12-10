@@ -33,7 +33,7 @@
     </script>
     <% else %>
     <%  content_for :sidebar do %>
-        <h4>Vacaciones del usuario : <%= @user.firstname %> <%= @user.lastname %></h4>
+        <h4>Vacaciones del usuario : <%= @user.firstname %> <%= @user.lastname %>.</h4>
         <% @holidays_user.each do |h| %>
             <p>
             <a class="icon icon-edit" href="/holidays/edit/<%= @id_user %>/<%= h.id %>"></a>
@@ -41,6 +41,14 @@
                 <%=h.date_from.strftime("%d/%m/%Y") %> al <%=h.date_to.strftime("%d/%m/%Y") %> 
                 ( <%= pluralize(h.days, 'día')%> )
             </p>
-        <%  end %>
+        <% end %>
+        <h4>Vacaciones añadidas.</h4>
+        <% @holidays_add.each do |ha| %>
+            <p>
+            <a class="icon icon-edit" href="/holidays_add/edit/<%= ha.id %>/<%= @id_user %>"></a>
+            <a class="icon icon-del" href="/holidays_add/delete/<%= ha.id %>/<%= @id_user %>"></a>
+            <%= pluralize(ha.days, 'día')%> , por <%= ha.comment %>
+            </p>
+        <% end %>
     <% end %>
 <% end %>

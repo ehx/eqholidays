@@ -1,0 +1,44 @@
+<% 
+if @mode == 'update' then 
+    @action = 'update' 
+else
+    @action = 'create'
+end
+%>
+    
+    <fieldset class="box tabular">
+      <legend>
+        Carga de dias para vacaciones
+      </legend>
+      
+      <%= form_tag(:controller => 'holidays_add' ,:action => @action , :method => 'post') do %>
+        <p>
+            <%= label_tag(:user, 'Usuario : ') %>
+            <%= select_tag "user_id", options_from_collection_for_select(@users, "id", "firstname") %>
+        </p>
+        <p>
+            <%= label_tag(:dfree, 'Fecha : ') %>
+            <%= text_field "holidays_add", "date" %>
+            <%= calendar_for('holidays_add_date') %>
+        </p>
+        <p>
+            <%= label_tag(:enable, "Cantidad de dias : ") %>
+            <%= text_field "holidays_add", "days" %>
+        </p>
+        <p>
+            <%= label_tag(:comentario, 'Motivo : ') %>
+            <%= text_field "holidays_add", "comment" %>
+        </p>
+        <hr/>
+            <%= hidden_field_tag(:id_holidays_add, @id_holidays_add) %>
+            <%= hidden_field_tag(:id_user, @id_user) %>
+        <%= submit_tag "Guardar" %>
+      <% end %>
+    </fieldset>
+
+
+<% if @mode == 'update' then %>
+    <script>
+        $('#holidays_add_date').val('<%= @holidays_add.date.to_s(:db) %>');
+    </script>
+<% end %>
