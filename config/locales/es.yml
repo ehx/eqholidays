@@ -11,7 +11,7 @@ es:
     holidays_days_consumed  : "Dias consumidos"
     holidays_free_days      : "Dias disponibles"
     holidays_acum           : "Vacaciones Acumuladas"
-    holidays_add_vacations  : "Cargar vacaciones."
+    holidays_add_vacations  : "Vacaciones"
     holidays_add_free_day   : "Agregar feriado."
     holidays_free_day_ok    : "Feriado cargado."
     holidays_free_day_error : "Ocurrio un error al guardar el feriado."

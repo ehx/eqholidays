@@ -10,7 +10,7 @@ en:
     holidays_days           : "Holidays days."
     holidays_days_consumed  : "Days consumed."
     holidays_free_days      : "Free days."
-    holidays_add_vacations  : "Add holidays."
+    holidays_add_vacations  : "holidays."
     holidays_add_free_day   : "Add Free day."
     holidays_free_day_ok    : "Free day added."
     holidays_free_day_error : "Free day error."
