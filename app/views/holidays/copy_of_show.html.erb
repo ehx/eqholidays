@@ -1,40 +1,40 @@
-<% if @user.admin == true then %>
 <div class="contextual">
     <a href="/holidays/free/new" class="icon icon-add">Cargar feriado</a> |
-    <a href="/holidays_add/index" class="icon icon-add">Agregar dias ponderados</a>
+    <a href="/holidays_add/index" class="icon icon-add">Agregar dias ponderados</a> |
+    <a href="/holidays/close" class="icon icon-lock">Cerrar periodo</a> 
 </div>
-<% end %>
 
-<h2>Vacaciones</h2>
+<h2>EqHolidays</h2>
     <table class="list">
         <thead>
             <tr>
             <th><%= t 'holidays_username' %></th>
+            <th><%= t 'holidays_user_date' %></th>
             <th><%= t 'holidays_days' %></th>
             <th><%= t 'holidays_days_consumed' %></th>
             <th><%= t 'holidays_acum' %></th>
             <th><%= t 'holidays_cons' %></th>
             <th><%= t 'holidays_free_days' %></th>
-            <% if @user.admin == true then %>
             <th></th>
-            <% end %>
             </tr>
         </thead>
-        
         <tbody>
-        <% @holidays.each do |u| %>	 
-           <tr class="user active odd">
-                <td><a href="/users/<%= u[0] %>/edit"><%= u[1] %> <%= u[2] %></a></td>
-                <td align="center" ><%= pluralize(u[3], 'día') %></td>
-                <td align="center" ><%= pluralize(u[4], 'día') %></td>
-                <td align="center" ><%= pluralize(u[5], 'día') %></td>
-                <td align="center" ><%= pluralize(u[6], 'día') %></td>
-                <td align="center" ><strong><%= pluralize(u[7], 'día') %></strong></td>
-                <% if @user.admin == true then %>
-                <td align="center" ><a href="/holidays/new/<%= u[0] %>" class="icon icon-add"><%= translate 'holidays_add_vacations' %></a></td>
-                <% end %>
+
+        <% @users.each do |u| %>	   
+            <% if (u.firstname != "Redmine") then %>
+            <tr class="user active odd">
+                <td><a href="/users/<%= u.id %>/edit"><%= u.firstname %> <%= u.lastname %></a></td>
+                <td align="center" ><%= @date_by_user_view[u.id].strftime("%d/%m/%Y") %></td>
+                <td align="center" ><%= pluralize(@vacations_days[u.id], 'día') %></td>
+                <td align="center" ><%= pluralize(@days_consumed[u.id], 'día') %></td>
+                <td align="center" ><%= pluralize(@holidays_acum[u.id], 'día') %></td>
+                <td align="center" ><%= pluralize(@days_cons[u.id], 'día') %></td>
+                <td align="center" ><strong><%= pluralize(@free_days[u.id], 'día') %></strong></td>
+                <td align="center" ><a href="/holidays/new/<%= u.id %>" class="icon icon-add"><%= translate 'holidays_add_vacations' %></a></td>
             </tr>
+            <% end %>
 		<% end %>
+		
 		</tbody>
     </table>
 
@@ -42,10 +42,8 @@
     <h4>Feriados <%= DateTime.now.year %></h4>
     <% @holidays_free_days.each do |f| %>
         <p>
-        <% if @user.admin == true then %>
             <a class="icon icon-edit" href="/holidays/free/edit/<%= f.id %>"></a>
             <a id="dialog-confirm" class="icon icon-del" href="/holidays/free/delete/<%= f.id %>"></a>
-        <% end %>
             <%= f.date_free_day.strftime("%d/%m/%Y") %>
             <% if f.enable == true then %>
                 <img alt="Toggle_check" src="/images/toggle_check.png">

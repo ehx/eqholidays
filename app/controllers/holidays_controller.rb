@@ -4,18 +4,31 @@ class HolidaysController < ApplicationController
   include CustomFieldsHelper
   require 'date'
 
+  #año actual
+  @@today_year = DateTime.now.year
+
     def show
-        #Calcula dias por usuario
-        self.days_users('')
+        #Trae todos los feriados cargados
+        @holidays_free_days = Holidays_free_days.order('date_free_day ASC').where('YEAR(date_free_day) = ?', @@today_year.to_s)
+        
+        sql =   "SELECT u.id , firstname, lastname, days, days_consumed, days_acum, days_free , diff , h.id
+                 FROM `holidays` h
+                 INNER JOIN users u ON u.id = user_id
+                 WHERE u.id <> 1
+                 AND period = " + @@today_year.to_s
+        @holidays = ActiveRecord::Base.connection.execute(sql)
+        
+        @user = User.find(:first, :conditions => [ "id = ?", session['user_id']])
         render :template => "holidays/show", :formats => [:html]
+        
     end
     
     def new
         @mode = 'create'
         @id_user = params[:id]
-        @holidays_user = Holidays_users.where("id_user = ?", @id_user)
+        @holidays_user = Holidays_users.where("id_user = ? and YEAR(date_to) = ?", @id_user, @@today_year)
         @user = User.find(:first, :conditions => [ "id = ?", @id_user])
-        @holidays_add = Holidays_adds.order('date ASC').where("user_id = ?", @id_user)
+        @holidays_add = Holidays_adds.order('date ASC').where("user_id = ? and YEAR(date) = ?", @id_user , @@today_year)
         render :template => "holidays/form_holidays", :formats => [:html]
     end
     
@@ -52,6 +65,7 @@ class HolidaysController < ApplicationController
             @vacaciones.days = days
 
             if @vacaciones.save then
+            	self.update_general(@vacaciones.id_user)
                 flash[:notice] = translate 'holidays_add' 
                 redirect_to :controller=>'holidays', :action => 'new', :id => @vacaciones.id_user
             else
@@ -70,6 +84,7 @@ class HolidaysController < ApplicationController
         @freeday.enable = params[:enable]
     
         if @freeday.save then
+        	
             flash[:notice] = translate 'holidays_add' 
             redirect_to :controller=>'holidays', :action => 'show'
         else
@@ -92,6 +107,7 @@ class HolidaysController < ApplicationController
                 @holidays_user.days = days
 
                 if @holidays_user.save then
+                	self.update_general(@holidays_user.id_user)
                     flash[:notice] = translate 'holidays_update_ok'
                     redirect_to :controller=>'holidays', :action => 'new' , :id => params[:id_user]
                 else
@@ -135,13 +151,14 @@ class HolidaysController < ApplicationController
         #borra dia de vacaciones
         @id_holidays = params[:id_holidays]
         @holidays_user = Holidays_users.find(@id_holidays)
-        
+
         if @holidays_user.delete then
+        	self.update_general(@holidays_user.id_user)
             flash[:notice] = translate 'holidays_delete' 
             redirect_to :controller=>'holidays', :action => 'new' , :id => @holidays_user.id_user
         else
             flash[:error] = translate 'holidays_error_id'
-            redirect_to :controller=>'holidays', :action => 'form_holidays', :id => @vacaciones.id_user
+		    redirect_to :controller=>'holidays', :action => 'form_holidays', :id => @vacaciones.id_user
         end
     end
     
@@ -352,6 +369,43 @@ class HolidaysController < ApplicationController
         end
     end
     
+    def update_general(id_usr)
+        #Trae todos los usuarios activos
+        @users = User.find(id_usr)
+		#Busca registro del usuario en tabla general
+        holidays_general = Holidays.find(:all , :conditions => ["period = ? and user_id = ?" , @@today_year , @users.id]).first
+        
+        #Actualizo dias
+        holidays_general.diff = holidays_general.days + holidays_general.days_acum + holidays_general.days_free - holidays_general.days_consumed
+        #Guardo
+		holidays_general.save
+    end
+    
+    def close_period2
+    	#Actualiza año actual con dias acumulados del año anterior
+    	
+        #Trae todos los usuarios activos
+        @users = User.logged.status(User::STATUS_ACTIVE).order('firstname ASC')
+        
+        #año siguiente        
+        prev_year = @@today_year -1
+        
+        @users.each do |m|
+            
+            @holidays = Holidays.find(:all , :conditions => ["period = ? and user_id = ?" , prev_year , m.id])
+            
+            @holidays.each do |h|
+                #busco vacaciones del periodo actual para actualizar
+                holiday_update = Holidays.find(:first , :conditions => ["period = ? and user_id = ?" , @@today_year , m.id])
+                #completo acumuladas del año anterior
+                holiday_update.days_acum = h.diff
+                #actualiza los dias que le quedan de vacaciones
+                holiday_update.diff = holiday_update.days + holiday_update.days_acum + holiday_update.days_free - holiday_update.days_consumed
+				holiday_update.save
+            end
+        end
+    end
+    
     def eloy
         #Trae todos los feriados cargados
         @holidays_free_days = Holidays_free_days.order('date_free_day ASC')
@@ -469,6 +523,63 @@ class HolidaysController < ApplicationController
                 @holiday.days_consumed = @days_consumed[m.id]
                 @holiday.save
             end
+        end
+    end
+
+
+    def eloy2
+        
+        #Variables
+        date_by_user = ''
+        date_by_user_view = ''
+        @vacations_days = Hash.new
+        @date_by_user2 = Hash.new
+        today_year = 0
+        
+        #Trae la parametria de vacaciones
+        holidays_parms = Holidays_parms.find(:all)
+        
+        for i in 2014..2050
+            
+            #Trae todos los usuarios activos
+            @users = User.logged.status(User::STATUS_ACTIVE).order('id ASC')
+        
+            #Por cada uno de los usuarios activos
+            @users.each do |m|
+    
+                #Sql para recuperar las fechas de campo personalizado , fecha extendida
+                sql = " SELECT MIN(value)
+                        FROM custom_fields a
+                        INNER JOIN custom_values b ON a.id = b.custom_field_id
+                        INNER JOIN users ON b.customized_id = users.id
+                        WHERE users.id = " + m.id.to_s()
+                        
+                #Obtengo la fecha del usuario        
+                date_user = ActiveRecord::Base.connection.execute(sql)
+                
+                date_user.each do | date_u |
+                    date_by_user = date_u[0]   
+                end
+            
+                @date_by_user2[m.id] = DateTime.parse(date_by_user) 
+                
+                year = DateTime.new(i,8,31)
+
+                difference_days = (year - @date_by_user2[m.id]).to_i
+
+                #Se fija en tabla de parametria cuanta cantidad de dias le pertenecen al usuario        
+                holidays_parms.each do |parm|  
+                    if  difference_days > parm.days_min and 
+                        difference_days <= parm.days_max  then
+                        @vacations_days[m.id] = parm.days_holidays
+                    end
+                end
+                @holidays = Holidays.where("user_id = ? AND period = ?", m.id , i).first
+                @holidays.days = @vacations_days[m.id]
+                @holidays.period = i
+                @holidays.save
+            end
+        #end for
         end
     end
 

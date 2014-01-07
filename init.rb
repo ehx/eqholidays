@@ -6,5 +6,6 @@ Redmine::Plugin.register :eqholidays do
   url 'http://www.equality.coop'
   author_url 'http://www.equality.coop'
   
-  menu :top_menu, :eqholidays, { :controller => 'holidays', :action => 'show' }, :caption => 'Eqholidays'
+  #menu :admin_menu, :eqholidays, { :controller => 'holidays', :action => 'show' }, :caption => 'Vacaciones'
+  menu :top_menu, :eqholidays, { :controller => 'holidays', :action => 'show' }, :caption => 'Vacaciones'
 end

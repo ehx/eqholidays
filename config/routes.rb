@@ -19,6 +19,10 @@ get 'holidays/close' , :to => 'holidays#close_period'
 
 get 'holidays/eloy' , :to => 'holidays#eloy'
 
+get 'holidays/eloy2' , :to => 'holidays#eloy2'
+
+get 'holidays/end' , :to => 'holidays#close_period2'
+
 
 get 'holidays/edit/:id/:id_holidays' , :to => 'holidays#edit'
 get 'holidays/delete/:id_holidays' , :to => 'holidays#delete'
