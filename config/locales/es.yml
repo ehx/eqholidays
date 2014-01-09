@@ -18,3 +18,5 @@ es:
     holidays_close_ok       : "Se cerro el periodo de vacaciones correctamente."
     holidays_close_error    : "El periodo actual ya cerro anteriormente."
     holidays_cons           : "Dias concedidos"
+    holidays_error_duplicate: "El feriado ya se encuentra cargado"
+    holidays_freeday_delete : "Se borro el feriado"

@@ -81,16 +81,24 @@ class HolidaysController < ApplicationController
     end
     
     def create_freeday
-        @freeday = Holidays_free_days.new()
-        @freeday.date_free_day = params[:holidays_free_days][:date_free_day]
-        @freeday.enable = params[:enable]
-    
-        if @freeday.save then
-        	
-            flash[:notice] = translate 'holidays_add' 
-            redirect_to :controller=>'holidays', :action => 'show'
+        
+        @free = Holidays_free_days.find(:first, :conditions => [ "date_free_day = ?", params[:holidays_free_days][:date_free_day] ])
+        
+        if @free.blank? then
+            @freeday = Holidays_free_days.new()
+            @freeday.date_free_day = params[:holidays_free_days][:date_free_day]
+            @freeday.enable = params[:enable]
+        
+            if @freeday.save then
+            	
+                flash[:notice] = translate 'holidays_add' 
+                redirect_to :controller=>'holidays', :action => 'show'
+            else
+                flash[:error] = translate 'holidays_error_fields'
+                redirect_to :controller=>'holidays', :action => 'show'
+            end
         else
-            flash[:error] = translate 'holidays_error_fields'
+            flash[:error] = translate 'holidays_error_duplicate'
             redirect_to :controller=>'holidays', :action => 'show'
         end
     end
@@ -171,7 +179,7 @@ class HolidaysController < ApplicationController
         @holidays_freeday = Holidays_free_days.find(@id_freeday)
         
         if @holidays_freeday.delete then
-            flash[:notice] = translate 'holidays_delete' 
+            flash[:notice] = translate 'holidays_freeday_delete' 
             redirect_to :controller=>'holidays', :action => 'show'
         else
             flash[:error] = translate 'holidays_error_id'
@@ -231,7 +239,6 @@ class HolidaysController < ApplicationController
         @users = User.find(id_usr)
 		#Busca registro del usuario en tabla general
         holidays_general = Holidays.find(:all , :conditions => ["period = ? and user_id = ?" , @@today_year , @users.id]).first
-        pp(holidays_general)
         #Actualizo dias
         holidays_general.diff = holidays_general.days + holidays_general.days_acum + holidays_general.days_free - holidays_general.days_consumed
         #Guardo
@@ -277,7 +284,6 @@ class HolidaysController < ApplicationController
             end
         end
         
-        pp(holidays_general)
         #Actualizo dias totales
         holidays_general.diff = holidays_general.days + holidays_general.days_acum + holidays_general.days_free - holidays_general.days_consumed
         #Guardo
