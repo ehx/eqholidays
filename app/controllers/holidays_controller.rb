@@ -26,9 +26,11 @@ class HolidaysController < ApplicationController
     def new
         @mode = 'create'
         @id_user = params[:id]
-        @holidays_user = Holidays_users.where("id_user = ? and YEAR(date_to) = ?", @id_user, @@today_year)
+        @date_from = DateTime.new(@@today_year-1,8,31)   
+        @date_to = DateTime.new(@@today_year,8,31)
+        @holidays_user = Holidays_users.where("id_user = ? and (date_from >= ? and date_to <= ?)", @id_user, @date_from.strftime('%F'), @date_to.strftime('%F'))
         @user = User.find(:first, :conditions => [ "id = ?", @id_user])
-        @holidays_add = Holidays_adds.order('date ASC').where("user_id = ? and YEAR(date) = ?", @id_user , @@today_year)
+        @holidays_add = Holidays_adds.order('date ASC').where("user_id = ? and (date > ? and date < ?)", @id_user , @date_from.strftime('%F'), @date_to.strftime('%F'))
         render :template => "holidays/form_holidays", :formats => [:html]
     end
     
@@ -65,7 +67,7 @@ class HolidaysController < ApplicationController
             @vacaciones.days = days
 
             if @vacaciones.save then
-            	self.update_general(@vacaciones.id_user)
+            	self.update_holidays(@vacaciones.id_user , 'consumed')
                 flash[:notice] = translate 'holidays_add' 
                 redirect_to :controller=>'holidays', :action => 'new', :id => @vacaciones.id_user
             else
@@ -107,7 +109,7 @@ class HolidaysController < ApplicationController
                 @holidays_user.days = days
 
                 if @holidays_user.save then
-                	self.update_general(@holidays_user.id_user)
+                	self.update_holidays(@holidays_user.id_user , 'consumed')
                     flash[:notice] = translate 'holidays_update_ok'
                     redirect_to :controller=>'holidays', :action => 'new' , :id => params[:id_user]
                 else
@@ -153,7 +155,8 @@ class HolidaysController < ApplicationController
         @holidays_user = Holidays_users.find(@id_holidays)
 
         if @holidays_user.delete then
-        	self.update_general(@holidays_user.id_user)
+        	self.update_holidays(@holidays_user.id_user , 'consumed')
+        	
             flash[:notice] = translate 'holidays_delete' 
             redirect_to :controller=>'holidays', :action => 'new' , :id => @holidays_user.id_user
         else
@@ -212,154 +215,8 @@ class HolidaysController < ApplicationController
         return days
     end
     
-    def days_users(mode)
-        
-        @flagerror = 0
-        
-        #año actual
-        today_year = DateTime.now.year
-        
-        #Trae todos los feriados cargados
-        @holidays_free_days = Holidays_free_days.order('date_free_day ASC').where('YEAR(date_free_day) = ?', today_year.to_s)
-        
-        #Trae todos los usuarios activos
-        @users = User.logged.status(User::STATUS_ACTIVE).order('firstname ASC')
-        
-        #Trae la parametria de vacaciones
-        holidays_parms = Holidays_parms.find(:all)
-        
-        #Variables
-        date_by_user = ''
-        date_by_user_view = ''
-        @vacations_days = Hash.new
-        @date_by_user2 = Hash.new
-        @date_by_user_view = Hash.new
-        @days_consumed = Hash.new
-        @free_days = Hash.new
-        @holidays_acum = Hash.new
-        @days_cons = Hash.new
-        today_year = 0
-        
-        #Por cada uno de los usuarios activos
-        @users.each do |m|
-
-            sql = " SELECT IFNULL( SUM( `days` ) , 0 )
-                    FROM `holidays_adds`
-                    WHERE YEAR( `date` ) = 2013 AND `user_id` = " + m.id.to_s()
-                    
-            #Obtengo dias consolidados
-            days_cons = ActiveRecord::Base.connection.execute(sql)
-            
-            days_cons.each do | days_c |
-                @days_cons[m.id] = days_c[0]   
-            end
-            
-            #Sql para recuperar las fechas de campo personalizado , fecha extendida
-            sql = " SELECT MIN(value)
-                    FROM custom_fields a
-                    INNER JOIN custom_values b ON a.id = b.custom_field_id
-                    INNER JOIN users ON b.customized_id = users.id
-                    WHERE users.id = " + m.id.to_s()
-                    
-            #Obtengo la fecha del usuario        
-            date_user = ActiveRecord::Base.connection.execute(sql)
-            
-            date_user.each do | date_u |
-                date_by_user = date_u[0]   
-            end
-        
-            @date_by_user2[m.id] = DateTime.parse(date_by_user) 
-            difference_days = (DateTime.now - @date_by_user2[m.id]).to_i
-
-            #Sql para recuperar las fechas de campo personalizado , fecha de ingreso
-            sql = " SELECT value
-                    FROM custom_fields a
-                    INNER JOIN custom_values b ON a.id = b.custom_field_id
-                    INNER JOIN users ON b.customized_id = users.id
-                    WHERE a.id = 10 AND users.id = " + m.id.to_s()
-                    
-            #Obtengo la fecha del usuario        
-            date_user_view = ActiveRecord::Base.connection.execute(sql)
-                
-            date_user_view.each do | date_u |
-                date_by_user_view = date_u[0]   
-            end
-                
-            @date_by_user_view[m.id] = DateTime.parse(date_by_user_view)
-                
-            #Se fija en tabla de parametria cuanta cantidad de dias le pertenecen al usuario        
-            holidays_parms.each do |parm|  
-                if  difference_days > parm.days_min and 
-                    difference_days <= parm.days_max  then
-                    @vacations_days[m.id] = parm.days_holidays
-                end
-            end
-
-            #Sql para recuperar el total de dias consumidos de vacaciones en este periodo
-            sql_days = "SELECT IFNULL( sum( days ) , 0 )
-                        FROM holidays_users
-                        WHERE id_user = " + m.id.to_s() + " AND 
-                        YEAR(date_from) = " + today_year.to_s + " AND 
-                        YEAR(date_to) = " + today_year.to_s + "
-                        GROUP BY id_user" 
-                        
-            days_consumed = ActiveRecord::Base.connection.execute(sql_days)
-            
-            days_consumed.each do | days |
-                @days_consumed[m.id] = days[0]
-            end
-            
-            #Sql para recuperar vacaciones antiguas
-            sql_acum =" SELECT sum(days)
-                        FROM `holidays_acums`
-                        WHERE id_user = " + m.id.to_s() + "
-                        AND period >= " + (today_year-2).to_s + "
-                        GROUP BY `id_user`"
-                    
-            #Obtengo dias acumulados de los usuarios (2 periodos anteriores)
-            days_acum = ActiveRecord::Base.connection.execute(sql_acum)
-            
-            days_acum.each do | day_a |
-                @holidays_acum[m.id] = day_a[0]   
-            end
-
-            #Si tiene dias consumidos de vacaciones , se los descuenta de los dias disponibles  
-            #Si tiene dias acumulados , se le suma a los disponibles
-            if @days_consumed[m.id] then
-                if @holidays_acum[m.id] then
-                    if (@vacations_days[m.id] - @days_consumed[m.id]) > 0
-                        @free_days[m.id] = @vacations_days[m.id] - @days_consumed[m.id] + @holidays_acum[m.id] + @days_cons[m.id]
-                    else
-                        @free_days[m.id] = 0
-                    end
-                else
-                    @free_days[m.id] = @vacations_days[m.id] - @days_consumed[m.id] + @days_cons[m.id]
-                end
-            end
-
-            #Si el modo es cerrar el periodo , creo
-            if mode == 'close' then
-                @holidays_acum = Holidays_acum.where("period = ? AND id_user = ?", today_year , m.id)
-                
-                #Compruebo que para el periodo a cerrar , no exista previamente un periodo cerrado igual
-                if @holidays_acum.empty? then
-                    @holidays_acum = Holidays_acum.new
-                    @holidays_acum.period = today_year
-                    @holidays_acum.id_user = m.id
-                    @holidays_acum.days = @free_days[m.id]
-                    @holidays_acum.save
-                else
-                    @flagerror = 1
-                    @holidays_acum.each do | ha |
-                        @period = ha.period
-                    end
-                end
-            end
-        end
-    end
-
     def close_period
-        self.days_users('close')
+
         if @flagerror == 0 then
             flash[:notice] = translate 'holidays_close_ok'
             redirect_to :controller=>'holidays', :action => 'show'
@@ -374,15 +231,62 @@ class HolidaysController < ApplicationController
         @users = User.find(id_usr)
 		#Busca registro del usuario en tabla general
         holidays_general = Holidays.find(:all , :conditions => ["period = ? and user_id = ?" , @@today_year , @users.id]).first
-        
+        pp(holidays_general)
         #Actualizo dias
         holidays_general.diff = holidays_general.days + holidays_general.days_acum + holidays_general.days_free - holidays_general.days_consumed
         #Guardo
 		holidays_general.save
     end
     
+    #Actualiza tabla general de vacaciones
+    def update_holidays(id_usr , mode)
+        #Trae todos los usuarios activos
+        @users = User.find(id_usr)
+        
+        #Busca registro del usuario en tabla general
+        holidays_general = Holidays.find(:all , :conditions => ["period = ? and user_id = ?" , @@today_year , @users.id]).first
+        
+        
+        if mode == 'consumed' then
+            #Sql para recuperar dias de vacaciones en el periodo
+            sql_days =" SELECT ifnull( sum( days ) , 0 )
+                            FROM holidays_users
+                            WHERE holidays_users.id_user = " + id_usr.to_s + "
+                            AND (date_from >= '" + (@@today_year-1).to_s + "-10-31')
+                            AND (date_to <= '" + @@today_year.to_s + "-10-31')"
+                        
+            #obtengo cantidad de dias del periodo
+            sql_days_result = ActiveRecord::Base.connection.execute(sql_days)
+            sql_days_result.each do | days |
+                #Actualizo dias usados en el periodo
+                holidays_general.days_consumed = days[0]
+            end
+        else
+            #Sql para recuperar dias otorgados al usuario
+            sql_free_days ="SELECT ifnull( sum( days ) , 0 )
+                            FROM holidays_adds
+                            WHERE user_id = " + id_usr.to_s + "
+                            AND (date >= '" + (@@today_year-1).to_s + "-10-31')
+                            AND (date <= '" + @@today_year.to_s + "-10-31')"
+                        
+            #obtengo cantidad de dias del periodo
+            sql_free_days_result = ActiveRecord::Base.connection.execute(sql_free_days)
+            sql_free_days_result.each do | days |
+                #Actualizo dias otorgados en el periodo
+                holidays_general.days_free = days[0]
+            end
+        end
+        
+        pp(holidays_general)
+        #Actualizo dias totales
+        holidays_general.diff = holidays_general.days + holidays_general.days_acum + holidays_general.days_free - holidays_general.days_consumed
+        #Guardo
+        holidays_general.save
+        
+    end
+
+    #Actualiza año actual con dias acumulados del año anterior
     def close_period2
-    	#Actualiza año actual con dias acumulados del año anterior
     	
         #Trae todos los usuarios activos
         @users = User.logged.status(User::STATUS_ACTIVE).order('firstname ASC')
@@ -397,11 +301,13 @@ class HolidaysController < ApplicationController
             @holidays.each do |h|
                 #busco vacaciones del periodo actual para actualizar
                 holiday_update = Holidays.find(:first , :conditions => ["period = ? and user_id = ?" , @@today_year , m.id])
-                #completo acumuladas del año anterior
-                holiday_update.days_acum = h.diff
-                #actualiza los dias que le quedan de vacaciones
-                holiday_update.diff = holiday_update.days + holiday_update.days_acum + holiday_update.days_free - holiday_update.days_consumed
-				holiday_update.save
+                if holiday_update then
+                    #completo acumuladas del año anterior
+                    holiday_update.days_acum = h.diff
+                    #actualiza los dias que le quedan de vacaciones
+                    holiday_update.diff = holiday_update.days + holiday_update.days_acum + holiday_update.days_free - holiday_update.days_consumed
+    				holiday_update.save
+    			end
             end
         end
     end
@@ -563,7 +469,7 @@ class HolidaysController < ApplicationController
             
                 @date_by_user2[m.id] = DateTime.parse(date_by_user) 
                 
-                year = DateTime.new(i,8,31)
+                year = DateTime.new(i-1,8,31)
 
                 difference_days = (year - @date_by_user2[m.id]).to_i
 
@@ -574,10 +480,14 @@ class HolidaysController < ApplicationController
                         @vacations_days[m.id] = parm.days_holidays
                     end
                 end
+
                 @holidays = Holidays.where("user_id = ? AND period = ?", m.id , i).first
-                @holidays.days = @vacations_days[m.id]
-                @holidays.period = i
-                @holidays.save
+
+                if @holidays then
+                    @holidays.days = @vacations_days[m.id]
+                    @holidays.period = i
+                    @holidays.save
+                end
             end
         #end for
         end

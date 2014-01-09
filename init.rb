@@ -2,7 +2,7 @@ Redmine::Plugin.register :eqholidays do
   name 'EqHolidays'
   author 'Eloy Colella'
   description 'Plugins para vacaciones'
-  version '0.0.5'
+  version '1.0'
   url 'http://www.equality.coop'
   author_url 'http://www.equality.coop'
   
